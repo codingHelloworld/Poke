@@ -87,7 +87,6 @@ class Poke(object):
                 print("error input for second user")
                 sys.exit(1)
             poke_b.sort()
-        print poke_a, poke_b
         #print(cls.poke_next_handle([], poke_a, poke_b, "", True))
         
         poke_remain_a = poke_a
@@ -99,7 +98,7 @@ class Poke(object):
             print(cls.poke_v2k(poke_out_a))
             if len(poke_remain_a) == 0:
                 break
-            print(poke_remain_a)
+            print("first user remain: %s" % cls.poke_v2k(poke_remain_a))
             u_b = raw_input("please input second user's poke:").upper()
             poke_out_b = []
             if len(u_b) > 0:
@@ -107,7 +106,7 @@ class Poke(object):
                     print("error input for second user's poke")
                     sys.exit(1)
                 poke_remain_b = cls.poke_remain(poke_out_b, poke_remain_b)
-                print "second user's poke:", poke_remain_b
+                print("second user's poke: %s" % cls.poke_v2k(poke_remain_b))
                 type = cls.get_poke_type(poke_out_b)
             else:
                 type = ""
@@ -215,7 +214,8 @@ class Poke(object):
             cls.get_avail_poke(poke_user_a, type, avail_poke_list)
         
         print "avail poke list:", type, avail_poke_list
-        print "current status:", poke_user_a, poke_user_b, poke_com
+        print("current status: %s %s %s" % (cls.poke_v2k(poke_user_a),
+                    cls.poke_v2k(poke_user_b), cls.poke_v2k(poke_com)))
         #raw_input("pause")
         
         for item in avail_poke_list:
@@ -228,8 +228,8 @@ class Poke(object):
                     if cls.poke_next_handle(item_poke, poke_user_b, poke_remain_a, key, False):
                         return item_poke, poke_remain_a
         if len(poke_com) > 0:
-            if cls.poke_next_handle([], poke_user_b, poke_user_a, "", False):
-                return [], poke_user_a
+            #if cls.poke_next_handle([], poke_user_b, poke_user_a, "", False):
+            return [], poke_user_a
         print("error calculation!")
         sys.exit(1)
     
@@ -406,13 +406,13 @@ class Poke(object):
                         ret.append(s_list_copy)
             elif type.endswith("tIIx"):
                 d_list = cls.poke_type_value(poke_user, "d", Poke_Type["d"][0])
-                if len(d_list) < 2*index:
-                    return []
                 s_list = []
                 for d_item in d_list:
                     s_list.append(d_item[0])
                     if 4 == poke_user.count(d_item[0]):
                         s_list.append(d_item[0])
+                if len(s_list) < 2*index:
+                    return []
                 tx_list = cls.poke_type_value(poke_user, str(index)+"tx", index*3)
                 for tx_item in tx_list:
                     poke_tIx_list = list(s_list)
@@ -422,7 +422,8 @@ class Poke(object):
                     tIx_suf_set = set(list(itertools.combinations(poke_tIx_list, index)))
                     for item in tIx_suf_set:
                         s_list_copy = list(tx_item)
-                        s_list_copy.extend(item)
+                        for i in range(index):
+                            s_list_copy.extend([item[i], item[i]])
                         ret.append(s_list_copy)
             else:
                 print "error param:", type
