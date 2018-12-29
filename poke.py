@@ -40,6 +40,7 @@ Poke_Type_X = {"sx":[s, 5, 12], "dx":[d, 3, 10],
 class Poke(object):
     g_re_dic = {}
     g_avail_dic = {}
+    g_type_value = {}
     
     @classmethod
     def usage(cls):
@@ -106,6 +107,7 @@ class Poke(object):
                     print("error input for second user's poke")
                     sys.exit(1)
                 poke_remain_b = cls.poke_remain(poke_out_b, poke_remain_b)
+                print "second user's poke:", poke_remain_b
                 type = cls.get_poke_type(poke_out_b)
             else:
                 type = ""
@@ -195,14 +197,25 @@ class Poke(object):
         sys.exit(1)
     
     @classmethod
+    def com_type(cls, type, type_com):
+        if 0 == len(type):
+            return True
+        if type == type_com:
+            return False
+        if type_com.endswith("x"):
+            return False
+        return True
+    
+    @classmethod
     def poke_out(cls, poke_com, poke_user_a, poke_user_b, type):
         avail_poke_list = []
         if 0 == len(poke_com):
-            cls.get_all_vail_poke(poke_user_a, avail_poke_list, True) 
+            cls.get_all_vail_poke(poke_user_a, avail_poke_list) 
         else:
-            cls.get_avail_poke(poke_user_a, type, avail_poke_list, True)
+            cls.get_avail_poke(poke_user_a, type, avail_poke_list)
         
         print "avail poke list:", type, avail_poke_list
+        print "current status:", poke_user_a, poke_user_b, poke_com
         #raw_input("pause")
         
         for item in avail_poke_list:
@@ -217,6 +230,8 @@ class Poke(object):
         if len(poke_com) > 0:
             if cls.poke_next_handle([], poke_user_b, poke_user_a, "", False):
                 return [], poke_user_a
+        print("error calculation!")
+        sys.exit(1)
     
     @classmethod
     def poke_k2v(cls, poke_input, poke_user):
@@ -244,17 +259,19 @@ class Poke(object):
     
     @classmethod
     def poke_type_value(cls, poke_user, type, length):
+        type_key = str(poke_user)+type+str(length)
+        if cls.g_type_value.has_key(type_key):
+            return cls.g_type_value[type_key]
+        
         size = len(poke_user)
         if size < length:
             return []
+        ret = []
         if "s" == type:
-            ret = []
             poke_set = set(poke_user)
             for item in poke_set:
                 ret.append([item])
-            return ret
-        if "d" == type:
-            ret = []
+        elif "d" == type:
             i = 0
             while i < (size - 1):
                 if poke_user[i+1] == poke_user[i]:
@@ -262,9 +279,7 @@ class Poke(object):
                     while (i < size - 1) and poke_user[i+1] == poke_user[i]:
                         i = i + 1
                 i = i + 1
-            return ret
-        if "t" == type:
-            ret = []
+        elif "t" == type:
             i = 0
             while i < (size - 2):
                 if poke_user[i+2] == poke_user[i]:
@@ -274,254 +289,149 @@ class Poke(object):
                         i = i + 2
                     ret.append([poke_user[i], poke_user[i], poke_user[i]])
                 i = i + 1
-            return ret
-        if "t1" == type:
-            ret = []
-            i = 0
-            while i < (size - 2):
-                if poke_user[i+2] == poke_user[i]:
-                    if i+3 < size and poke_user[i+3] == poke_user[i]:
-                        i = i + 3
-                    else:
-                        i = i + 2
-                    for poke_i in set(poke_user):
-                        if not poke_i == poke_user[i]:
-                            ret.append([poke_user[i], poke_user[i], poke_user[i], poke_i])
-                i = i + 1            
-            return ret
-        if "t2" == type:
+        elif "t1" == type:
+            t_list = cls.poke_type_value(poke_user, "t", Poke_Type["t"][0])
+            for item in t_list:
+                for s_item in set(poke_user):
+                    if s_item != item[0]:
+                        ret.append([item[0], item[0], item[0], s_item])
+        elif "t2" == type:
             d_list = cls.poke_type_value(poke_user, "d", Poke_Type["d"][0])
-            if 0 == len(d_list):
-                return []
-            ret = []
-            i = 0
-            while i < (size - 2):
-                if poke_user[i+2] == poke_user[i]:
-                    if i+3 < size and poke_user[i+3] == poke_user[i]:
-                        i = i + 3
-                    else:
-                        i = i + 2
-                    for poke_i in d_list:
-                        if not poke_i[0] == poke_user[i]:
-                            ret.append([poke_user[i], poke_user[i], poke_user[i],
-                                                                   poke_i[0], poke_i[0]])
-                i = i + 1            
-            return ret
-        if "f2" == type:
-            ret = []
-            i = 0
-            while i < (size - 3):
-                if poke_user[i+3] == poke_user[i]:
-                    i = i + 3
-                    f_list = list(poke_user)
-                    while poke_user[i] in f_list:
-                        f_list.remove(poke_user[i])
-                    com_f_set = set(list(itertools.combinations(f_list, 2)))
-                    for item in com_f_set:
-                        ret.append([poke_user[i], poke_user[i], poke_user[i], poke_user[i],
-                                                                                item[0], item[1]])
-                i = i + 1            
-            return ret
-        if "f4" == type:
-            d_list = cls.poke_type_value(poke_user, "d", Poke_Type["d"][0])
-            if len(d_list) < 2:
-                return []
-            ret = []
-            i = 0
-            while i < (size - 3):
-                if poke_user[i+3] == poke_user[i]:
-                    i = i + 3
-                    d2s_list = []
-                    for item in d_list:
-                        if item[0] != poke_user[i]:
-                            d2s_list.append(item[0])
-                    com_f_list = list(itertools.combinations(d2s_list, 2))
-                    for item in com_f_list:
-                        ret.append([poke_user[i], poke_user[i], poke_user[i], poke_user[i],
-                                                            item[0], item[0], item[1], item[1]])
-                i = i + 1            
-            return ret
-        if "f" == type:
-            ret = []
+            t_list = cls.poke_type_value(poke_user, "t", Poke_Type["t"][0])
+            for item in t_list:
+                for d_item in d_list:
+                    if d_item[0] != item[0]:
+                        ret.append([item[0], item[0], item[0], d_item[0], d_item[0]])
+        elif "f" == type:
             i = 0
             while i < (size - 3):
                 if poke_user[i+3] == poke_user[i]:
                     i = i + 3
                     ret.append([poke_user[i], poke_user[i], poke_user[i], poke_user[i]])
                 i = i + 1
-            return ret
-        if "b" == type:
-            ret = []
-            if Poke_Dic["X"] in poke_user and Poke_Dic["Y"] in poke_user:
-                ret.append([Poke_Dic["X"], Poke_Dic["Y"]])
-            return ret
-        if type.endswith("x"):
-            index = int(re.findall("\\d+", type)[0])
-        if type.endswith("sx"):
-            poke_user_set = list(set(poke_user))
-            size = len(poke_user_set)
-            ret = []
-            if size < length:
-                return ret
-            i = 0
-            while i < size:
-                j = 1
-                is_s = True
-                s_list = [poke_user_set[i]]
-                if i + index > size:
-                    break
-                while j < index:
-                    if j != (poke_user_set[i+j] - poke_user_set[i]):
-                        i = i + j
-                        is_s = False
-                        break
-                    s_list.append(poke_user_set[i+j])
-                    j = j + 1
-                if is_s:
-                    ret.append(s_list)
-                    i = i + 1
-            return ret
-        if type.endswith("dx"):
+        elif "f2" == type:
+            f_list = cls.poke_type_value(poke_user, "f", Poke_Type["f"][0])
+            for f_item in f_list:
+                s_list = list(poke_user)
+                while f_item[0] in s_list:
+                    s_list.remove(f_item[0])
+                com_f_set = set(list(itertools.combinations(s_list, 2)))
+                for item in com_f_set:
+                    ret.append([f_item[0], f_item[0], f_item[0], f_item[0], item[0], item[1]])
+        elif "f4" == type:
             d_list = cls.poke_type_value(poke_user, "d", Poke_Type["d"][0])
             if len(d_list) < 3:
                 return []
-            poke_user_set = []
-            for item in d_list:
-                poke_user_set.append(item[0])
-            size = len(poke_user_set)
-            ret = []
-            if size*2 < length:
-                return ret
-            i = 0
-            while i < size:
-                j = 1
-                is_s = True
-                s_list = [poke_user_set[i], poke_user_set[i]]
-                if i + index > size:
-                    break
-                while j < index:
-                    if j != (poke_user_set[i+j] - poke_user_set[i]):
-                        i = i + j
-                        is_s = False
-                        break
-                    s_list.extend([poke_user_set[i+j], poke_user_set[i+j]])
-                    j = j + 1
-                if is_s:
-                    ret.append(s_list)
-                    i = i + 1
-            return ret
-        if type.endswith("tx"):
-            t_list = cls.poke_type_value(poke_user, "t", Poke_Type["t"][0])
-            if len(t_list) < 2:
-                return []
-            poke_user_set = []
-            for item in t_list:
-                poke_user_set.append(item[0])
-            size = len(poke_user_set)
-            ret = []
-            if size*3 < length:
-                return ret
-            i = 0
-            while i < size:
-                j = 1
-                is_s = True
-                s_list = [poke_user_set[i], poke_user_set[i], poke_user_set[i]]
-                if i + index > size:
-                    break
-                while j < index:
-                    if j != (poke_user_set[i+j] - poke_user_set[i]):
-                        i = i + j
-                        is_s = False
-                        break
-                    s_list.extend([poke_user_set[i+j], poke_user_set[i+j], poke_user_set[i+j]])
-                    j = j + 1
-                if is_s:
-                    ret.append(s_list)
-                    i = i + 1
-            return ret
-        if type.endswith("tIx"):
-            t_list = cls.poke_type_value(poke_user, "t", Poke_Type["t"][0])
-            if len(t_list) < 2:
-                return []
-            poke_user_set = []
-            for item in t_list:
-                poke_user_set.append(item[0])
-            size = len(poke_user_set)
-            ret = []
-            if (size+1)*3 < length:
-                return ret
-            i = 0
-            while i < size:
-                j = 1
-                is_s = True
-                if i + index > size:
-                    break
-                s_list = [poke_user_set[i], poke_user_set[i], poke_user_set[i]]
-                while j < index:
-                    if j != (poke_user_set[i+j] - poke_user_set[i]):
-                        i = i + j
-                        is_s = False
-                        break
-                    s_list.extend([poke_user_set[i+j], poke_user_set[i+j], poke_user_set[i+j]])
-                    j = j + 1
-                if is_s:
+            f_list = cls.poke_type_value(poke_user, "f", Poke_Type["f"][0])
+            for f_item in f_list:
+                d2s_list = []
+                for d_item in d_list:
+                    if d_item[0] != f_item[0]:
+                        d2s_list.append(d_item[0])
+                com_f_list = list(itertools.combinations(d2s_list, 2))
+                for item in com_f_list:
+                    ret.append([f_item[0], f_item[0], f_item[0], f_item[0],
+                                                            item[0], item[0], item[1], item[1]])
+        elif "b" == type:
+            if Poke_Dic["X"] in poke_user and Poke_Dic["Y"] in poke_user:
+                ret.append([Poke_Dic["X"], Poke_Dic["Y"]])
+        elif type.endswith("x"):
+            index = int(re.findall("\\d+", type)[0])
+            if type.endswith("sx"):
+                poke_user_list = list(set(poke_user))
+                poke_user_list.sort()
+                size = len(poke_user_list)
+                if size < length:
+                    return []
+                i = 0
+                while i + index <= size:
+                    is_s = True
+                    s_list = [poke_user_list[i]]
+                    j = 1
+                    while j < index:
+                        if j != (poke_user_list[i+j] - poke_user_list[i]):
+                            i = i + j
+                            is_s = False
+                            break
+                        s_list.append(poke_user_list[i+j])
+                        j = j + 1
+                    if is_s:
+                        ret.append(s_list)
+                        i = i + 1
+            elif type.endswith("dx"):
+                d_list = cls.poke_type_value(poke_user, "d", Poke_Type["d"][0])
+                if len(d_list) < 3:
+                    return []
+                poke_user_list = []
+                for item in d_list:
+                    poke_user_list.append(item[0])
+                poke_user_list.sort()
+                size = len(poke_user_list)
+                if size*2 < length:
+                    return ret
+                sx_list = cls.poke_type_value(poke_user_list, str(index)+"sx", index)
+                for sx_item in sx_list:
+                    dx_list = []
+                    for s_item in sx_item:
+                        dx_list.extend([s_item, s_item])
+                    ret.append(dx_list)
+            elif type.endswith("tx"):
+                t_list = cls.poke_type_value(poke_user, "t", Poke_Type["t"][0])
+                if len(t_list) < 2:
+                    return []
+                poke_user_list = []
+                for item in t_list:
+                    poke_user_list.append(item[0])
+                poke_user_list.sort()
+                size = len(poke_user_list)
+                if size*3 < length:
+                    return ret
+                sx_list = cls.poke_type_value(poke_user_list, str(index)+"sx", index)
+                for sx_item in sx_list:
+                    dx_list = []
+                    for s_item in sx_item:
+                        dx_list.extend([s_item, s_item, s_item])
+                    ret.append(dx_list)
+            elif type.endswith("tIx"):
+                tx_list = cls.poke_type_value(poke_user, str(index)+"tx", index*3)
+                for tx_item in tx_list:
                     poke_tIx_list = list(poke_user)
-                    for k in range(index):
-                        while s_list[k*3] in poke_tIx_list:
-                            poke_tIx_list.remove(s_list[k*3])
-                        k = k + 1
+                    for i in range(index):
+                        for j in range(3):
+                            poke_tIx_list.remove(tx_item[i*3])
                     tIx_suf_set = set(list(itertools.combinations(poke_tIx_list, index)))
                     for item in tIx_suf_set:
-                        s_list_copy = list(s_list)
-                        ret.append(s_list_copy.extend(list(item)))
-                    i = i + 1
-            return ret
-        if type.endswith("tIIx"):
-            t_list = cls.poke_type_value(poke_user, "t", Poke_Type["t"][0])
-            if len(t_list) < 2:
-                return []
-            poke_user_set = []
-            for item in t_list:
-                poke_user_set.append(item[0])
-            size = len(poke_user_set)
-            ret = []
-            if (size+2)*3 < length:
-                return ret
-            i = 0
-            while i < size:
-                j = 1
-                is_s = True
-                s_list = [poke_user_set[i], poke_user_set[i], poke_user_set[i]]
-                if i + index > size:
-                    break
-                while j < index:
-                    if j != (poke_user_set[i+j] - poke_user_set[i]):
-                        i = i + j
-                        is_s = False
-                        break
-                    s_list.extend([poke_user_set[i+j], poke_user_set[i+j], poke_user_set[i+j]])
-                    j = j + 1
-                if is_s:
-                    poke_tIIx_list = list(poke_user)
-                    for k in range(index):
-                        while s_list[k*3] in poke_tIIx_list:
-                            poke_tIIx_list.remove(s_list[k*3])
-                        k = k + 1
-                    d_l = cls.poke_type_value(poke_tIIx_list, "d", Poke_Type["d"][0])
-                    d_list = []
-                    for item in d_l:
-                        d_list.append(item[0])
-                    for item in d_list:
-                        if 4 == poke_user.count(item):
-                            d_list.append(item)
-                    tIx_suf_list = list(itertools.combinations(d_list, index))
-                    for item in tIx_suf_list:
-                        s_list_copy = list(s_list)
-                        for d_list_item in item:
-                            s_list_copy.extend([d_list_item, d_list_item])
+                        s_list_copy = list(tx_item)
+                        s_list_copy.extend(item)
                         ret.append(s_list_copy)
-                    i = i + 1
-            return ret
+            elif type.endswith("tIIx"):
+                d_list = cls.poke_type_value(poke_user, "d", Poke_Type["d"][0])
+                if len(d_list) < 2*index:
+                    return []
+                s_list = []
+                for d_item in d_list:
+                    s_list.append(d_item[0])
+                    if 4 == poke_user.count(d_item[0]):
+                        s_list.append(d_item[0])
+                tx_list = cls.poke_type_value(poke_user, str(index)+"tx", index*3)
+                for tx_item in tx_list:
+                    poke_tIx_list = list(s_list)
+                    for i in range(index):
+                        while tx_item[i*3] in poke_tIx_list:
+                            poke_tIx_list.remove(tx_item[i*3])
+                    tIx_suf_set = set(list(itertools.combinations(poke_tIx_list, index)))
+                    for item in tIx_suf_set:
+                        s_list_copy = list(tx_item)
+                        s_list_copy.extend(item)
+                        ret.append(s_list_copy)
+            else:
+                print "error param:", type
+                sys.exit(1)
+        else:
+            print "error param:", type
+            sys.exit(1)
+        cls.g_type_value[type_key] = list(ret)
+        return ret
         
     @classmethod
     def poke_next_handle(cls, poke_com, poke_user_a, poke_user_b, type, want_win):
@@ -531,9 +441,9 @@ class Poke(object):
         
         avail_poke_list = []
         if 0 == len(poke_com):
-            cls.get_all_vail_poke(poke_user_a, avail_poke_list, want_win) 
+            cls.get_all_vail_poke(poke_user_a, avail_poke_list) 
         else:
-            cls.get_avail_poke(poke_user_a, type, avail_poke_list, want_win)
+            cls.get_avail_poke(poke_user_a, type, avail_poke_list)
         
         '''
         print type, avail_poke_list
@@ -545,7 +455,6 @@ class Poke(object):
             for item_poke in item[key]:
                 if cls.com_type(type, key) or item_poke[0] > poke_com[0]:
                     poke_remain_a = cls.poke_remain(item_poke, poke_user_a)
-                    #print item_poke, poke_remain_a
                     if 0 == len(poke_remain_a):
                         if want_win:
                             cls.g_re_dic[re_dic_key] = True
@@ -553,6 +462,7 @@ class Poke(object):
                         else:
                             cls.g_re_dic[re_dic_key] = False
                             return False
+        
         if want_win:
             ret = False
         else:
@@ -569,61 +479,58 @@ class Poke(object):
                         ret = ret and handle_ret
         if len(poke_com) > 0:
             handle_ret = cls.poke_next_handle([], poke_user_b, poke_user_a, "", not want_win)
-        if want_win:
-            ret = ret or handle_ret
-        else:
-            ret = ret and handle_ret
+            if want_win:
+                ret = ret or handle_ret
+            else:
+                ret = ret and handle_ret
         cls.g_re_dic[re_dic_key] = ret
         return ret
         
-    @classmethod
-    def com_type(cls, type, type_com):
-        if 0 == len(type):
-            return True
-        if type == type_com:
-            return False
-        if type_com.endswith("x"):
-            return False
-        return True
         
     @classmethod
-    def get_all_vail_poke(cls, poke_user, avail_poke_list, want_win):
+    def get_all_vail_poke(cls, poke_user, avail_poke_list):
         types = Poke_Type.keys()
         for type in types:
-            cls.get_avail_poke(poke_user, type, avail_poke_list, want_win)
+            cls.get_avail_poke(poke_user, type, avail_poke_list)
         
     @classmethod
-    def get_avail_poke(cls, poke_user, type, avail_poke_list, want_win):
-        key_dic = str(poke_user)+type+str(want_win)
+    def get_avail_poke(cls, poke_user, type, avail_poke_list):
+        key_dic = str(poke_user)+type
         if cls.g_avail_dic.has_key(key_dic):
-            avail_poke_list.extend(list(cls.g_avail_dic[key_dic]))
+            avail_poke_list.extend(cls.g_avail_dic[key_dic])
+            return
         new_type = type
-        index = -1
+        index_fix = -1
         if not Poke_Type.has_key(type):
             new_type = re.findall("[A-Za-z]+", type)[0]
-            index = int(re.findall("\\d+", type)[0])
+            index_fix = int(re.findall("\\d+", type)[0])
         avail_type_list = list(Poke_Type[new_type])
         length = avail_type_list.pop(0)
+        type_list = []
         for item_type in avail_type_list:
             if item_type in Poke_Type_X.keys():
                 type_x_list = list(Poke_Type_X[item_type])
-                if index > 0:
-                    value_list = cls.poke_type_value(poke_user, type, type_x_list[0](index))
+                if index_fix > 0:
+                    value_list = cls.poke_type_value(poke_user, type, type_x_list[0](index_fix))
                     if len(value_list) > 0 and {type:value_list} not in avail_poke_list:
-                        avail_poke_list.append({type:value_list})
+                        type_list.append({type:value_list})
                 else:
                     for index in range(type_x_list[1], type_x_list[2] + 1):
-                        value_list = cls.poke_type_value(poke_user, str(index)+item_type, type_x_list[0](index))
-                        if len(value_list) > 0 and {str(index)+item_type:value_list} not in avail_poke_list:
-                            avail_poke_list.append({str(index)+item_type:value_list})
-                        if len(value_list) < 0:
+                        value_list = cls.poke_type_value(poke_user, str(index)+item_type,
+                                                                    type_x_list[0](index))
+                        if len(value_list) == 0:
                             break
+                        if {str(index)+item_type:value_list} not in type_list:
+                            type_list.append({str(index)+item_type:value_list})
             else:
                 value_list = cls.poke_type_value(poke_user, item_type, length)
-                if len(value_list) > 0 and {item_type:value_list} not in avail_poke_list:
-                    avail_poke_list.append({item_type:value_list})
-        if len(avail_poke_list) > 0:
-            cls.g_avail_dic[key_dic] = list(avail_poke_list)
+                if len(value_list) > 0 and {item_type:value_list} not in type_list:
+                    type_list.append({item_type:value_list})
+        if len(type_list) > 0:
+            cls.g_avail_dic[key_dic] = list(type_list)
+            for item in type_list:
+                if item not in avail_poke_list:
+                    avail_poke_list.append(item)
                 
     @classmethod
     def poke_remain(cls, poke_outs, poke_user):
