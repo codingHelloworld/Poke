@@ -38,6 +38,7 @@ Poke_Type_X = {"sx":[s, 5, 12], "dx":[d, 3, 10],
             "tx":[t0, 2, 6], "tIx":[t1, 2, 5], "tIIx":[t2, 2, 4]}
             
 class Poke(object):
+    EXIT = "EXIT"
     g_re_dic = {}
     g_avail_dic = {}
     g_type_value = {}
@@ -75,17 +76,32 @@ class Poke(object):
                     print("error input for second user")
                     sys.exit(1)
                 poke_b.sort()
-        if 0 == len(poke_a):
-            u_a = raw_input("please input first user's poke:").upper()
+        while True:
+            t1 = datetime.datetime.now()
+            cls.next_poke(poke_a, poke_b)
+            t2 = datetime.datetime.now()
+            print("Finish! (exec %ss)\n" % (t2-t1))
+            poke_a = []
+            poke_b = []
+
+    @classmethod
+    def next_poke(cls, poke_a, poke_b):
+        while 0 == len(poke_a):
+            u_a = raw_input("please input first user's poke :").upper()
+            if u_a == cls.EXIT:
+                print("Byebye!")
+                sys.exit(2)
             if not cls.poke_k2v(u_a, poke_a):
                 print("error input for first user")
-                sys.exit(1)
+                poke_a = []
+                continue
             poke_a.sort()
-        if 0 == len(poke_b):
+        while 0 == len(poke_b):
             u_b = raw_input("please input second user's poke:").upper()
             if not cls.poke_k2v(u_b, poke_b):
                 print("error input for second user")
-                sys.exit(1)
+                poke_b = []
+                continue
             poke_b.sort()
         #print(cls.poke_next_handle([], poke_a, poke_b, "", True))
         
@@ -94,23 +110,35 @@ class Poke(object):
         poke_out_b = []
         type = ""
         while len(poke_remain_a) > 0:
-            poke_out_a,poke_remain_a = cls.poke_out(poke_out_b, poke_remain_a, poke_remain_b, type)
-            print(cls.poke_v2k(poke_out_a))
+            poke_out_a, poke_remain_a = cls.poke_out(
+                    poke_out_b, poke_remain_a, poke_remain_b, type)
+            print("\nplease select: %s" % cls.poke_v2k(poke_out_a))
             if len(poke_remain_a) == 0:
                 break
-            print("first user remain: %s" % cls.poke_v2k(poke_remain_a))
-            u_b = raw_input("please input second user's poke:").upper()
-            poke_out_b = []
-            if len(u_b) > 0:
-                if not cls.poke_k2v(u_b, poke_out_b):
-                    print("error input for second user's poke")
-                    sys.exit(1)
-                poke_remain_b = cls.poke_remain(poke_out_b, poke_remain_b)
-                print("second user's poke: %s" % cls.poke_v2k(poke_remain_b))
-                type = cls.get_poke_type(poke_out_b)
-            else:
-                type = ""
-        
+            '''print("current status: f(left):%s s(left):%s s(last):%s" %
+                (cls.poke_v2k(poke_remain_a), cls.poke_v2k(poke_remain_b),
+                                                cls.poke_v2k(poke_out_b)))'''
+            print("current status: %s %s %s" % (cls.poke_v2k(poke_remain_a),
+                        cls.poke_v2k(poke_remain_b), cls.poke_v2k(poke_out_b)))
+            u_b = []
+            while len(u_b) == 0:
+                u_b = raw_input("please input second user's select:").upper()
+                poke_out_b = []
+                if len(u_b) > 0:
+                    if not cls.poke_k2v(u_b, poke_out_b):
+                        print("error input for second user's select")
+                        u_b = []
+                        continue
+                    poke_remain_ret, poke_remain_b = cls.poke_remain(poke_out_b, poke_remain_b)
+                    if not poke_remain_ret:
+                        print("error input for second user's select")
+                        u_b = []
+                        continue
+                    #print("second user's poke: %s" % cls.poke_v2k(poke_remain_b))
+                    type = cls.get_poke_type(poke_out_b)
+                else:
+                    type = ""
+                    break
     
     @classmethod
     def get_poke_type(cls, poke_outs):
@@ -144,7 +172,7 @@ class Poke(object):
         if 8 == length:
             if poke_outs[2] == poke_outs[0] and poke_outs[5] == poke_outs[3]:
                 return "2tIx"
-            if poke_outs[2] - poke_outs[0] == 1 and poke_outs[5] - poke_outs[3] == 1 and poke_outs[7] - poke_outs[5] == 1:
+            if poke_outs[2] - poke_outs[0] == 1:
                 return "4dx"
             if poke_outs[0] == poke_outs[3]:
                 return "f4"
@@ -213,18 +241,24 @@ class Poke(object):
         else:
             cls.get_avail_poke(poke_user_a, type, avail_poke_list)
         
-        print "avail poke list:", type, avail_poke_list
-        print("current status: %s %s %s" % (cls.poke_v2k(poke_user_a),
-                    cls.poke_v2k(poke_user_b), cls.poke_v2k(poke_com)))
+        #print "avail poke list:", type, avail_poke_list
+        '''print("\ncurrent status: %s %s %s" % (cls.poke_v2k(poke_user_a),
+                    cls.poke_v2k(poke_user_b), cls.poke_v2k(poke_com)))'''
         #raw_input("pause")
         
         for item in avail_poke_list:
             key = item.keys()[0]
             for item_poke in item[key]:
                 if cls.com_type(type, key) or item_poke[0] > poke_com[0]:
-                    poke_remain_a = cls.poke_remain(item_poke, poke_user_a)
+                    poke_remain_ret, poke_remain_a = cls.poke_remain(item_poke, poke_user_a)
                     if 0 == len(poke_remain_a):
                         return item_poke, poke_remain_a
+        
+        for item in avail_poke_list:
+            key = item.keys()[0]
+            for item_poke in item[key]:
+                if cls.com_type(type, key) or item_poke[0] > poke_com[0]:
+                    poke_remain_ret, poke_remain_a = cls.poke_remain(item_poke, poke_user_a)
                     if cls.poke_next_handle(item_poke, poke_user_b, poke_remain_a, key, False):
                         return item_poke, poke_remain_a
         if len(poke_com) > 0:
@@ -237,11 +271,13 @@ class Poke(object):
     def poke_k2v(cls, poke_input, poke_user):
         if 0 == len(poke_input):
             return False
+        skip_0 = False
         for key in poke_input:
-            if "0" == key:
+            if "0" == key and skip_0:
                 continue
             if key == "1":
                 key = "10"
+                skip_0 = True
             if not Poke_Dic.has_key(key):
                 return False
             poke_user.append(Poke_Dic[key])
@@ -455,7 +491,7 @@ class Poke(object):
             key = item.keys()[0]
             for item_poke in item[key]:
                 if cls.com_type(type, key) or item_poke[0] > poke_com[0]:
-                    poke_remain_a = cls.poke_remain(item_poke, poke_user_a)
+                    poke_remain_ret, poke_remain_a = cls.poke_remain(item_poke, poke_user_a)
                     if 0 == len(poke_remain_a):
                         if want_win:
                             cls.g_re_dic[re_dic_key] = True
@@ -472,18 +508,27 @@ class Poke(object):
             key = item.keys()[0]
             for item_poke in item[key]:
                 if cls.com_type(type, key) or item_poke[0] > poke_com[0]:
-                    poke_remain_a = cls.poke_remain(item_poke, poke_user_a)
-                    handle_ret = cls.poke_next_handle(item_poke, poke_user_b, poke_remain_a, key, not want_win)
+                    poke_remain_ret, poke_remain_a = cls.poke_remain(item_poke, poke_user_a)
+                    handle_ret = cls.poke_next_handle(
+                                    item_poke, poke_user_b, poke_remain_a, key, not want_win)
                     if want_win:
-                        ret = ret or handle_ret
+                        if handle_ret:
+                            cls.g_re_dic[re_dic_key] = True
+                            return True
                     else:
-                        ret = ret and handle_ret
+                        if not handle_ret:
+                            cls.g_re_dic[re_dic_key] = False
+                            return False
         if len(poke_com) > 0:
             handle_ret = cls.poke_next_handle([], poke_user_b, poke_user_a, "", not want_win)
             if want_win:
-                ret = ret or handle_ret
+                if handle_ret:
+                    cls.g_re_dic[re_dic_key] = True
+                    return True
             else:
-                ret = ret and handle_ret
+                if not handle_ret:
+                    cls.g_re_dic[re_dic_key] = False
+                    return False
         cls.g_re_dic[re_dic_key] = ret
         return ret
         
@@ -498,7 +543,9 @@ class Poke(object):
     def get_avail_poke(cls, poke_user, type, avail_poke_list):
         key_dic = str(poke_user)+type
         if cls.g_avail_dic.has_key(key_dic):
-            avail_poke_list.extend(cls.g_avail_dic[key_dic])
+            for item_cache in cls.g_avail_dic[key_dic]:
+                if item_cache not in avail_poke_list:
+                    avail_poke_list.append(item_cache)
             return
         new_type = type
         index_fix = -1
@@ -537,12 +584,12 @@ class Poke(object):
     def poke_remain(cls, poke_outs, poke_user):
         poke_list = list(poke_user)
         for item in poke_outs:
-            poke_list.remove(item)
-        return poke_list
+            if item in poke_list:
+                poke_list.remove(item)
+            else:
+                return False, poke_user
+        return True, poke_list
             
 
 if __name__ == "__main__":
-    t1 = datetime.datetime.now()
     Poke.main()
-    t2 = datetime.datetime.now()
-    print("(exec %ss)" % (t2-t1))
