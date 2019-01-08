@@ -264,8 +264,8 @@ class Poke(object):
         if len(poke_com) > 0:
             #if cls.poke_next_handle([], poke_user_b, poke_user_a, "", False):
             return [], poke_user_a
-        print("error calculation!")
-        sys.exit(1)
+        print("No way to win!")
+        return [], []
     
     @classmethod
     def poke_k2v(cls, poke_input, poke_user):
